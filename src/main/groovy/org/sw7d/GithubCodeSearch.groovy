@@ -14,11 +14,9 @@ class GithubCodeSearch {
     Map getResults() {
        load()
        if (!_result) {
-
-
            _result = getOnePage("https://api.github.com/search/code?q=${query}&per_page=${perPage}")
-           if (getAll && _nextUrl) {
-
+           while (getAll && _nextUrl) {
+             _result.items.addAll (getOnePage(_nextUrl).items)
            }
            store(mapToJsonString(_result))
 
@@ -47,10 +45,17 @@ class GithubCodeSearch {
     }
 
     Map getOnePage(String uri) {
+        println "  now retrieving: "+uri
         URL url = new URL(uri)
         URLConnection connection = url.openConnection()
         connection.addRequestProperty('Accept', 'application/vnd.github.preview.text-match+json')
-        println "----"+connection.headerFields.Link[0]+"----" +connection.headerFields.Link[0].getClass()
+
+        _nextUrl = parseNextUrl(connection.headerFields)
+        if (_nextUrl && connection.headerFields['X-RateLimit-Remaining'][0] == '0') {
+            int waitSeconds = Integer.parseInt(connection.headerFields['X-RateLimit-Reset'][0]) - System.currentTimeMillis()/1000  +1
+            println "---> need to wait seconds: "+waitSeconds
+            sleep (waitSeconds *1000)
+        }
         new JsonSlurper().parseText(connection.content.text)
     }
 
@@ -58,6 +63,24 @@ class GithubCodeSearch {
         JsonBuilder builder = new JsonBuilder()
         builder _result
         return builder.toPrettyString()
+    }
+
+    // if there are more:
+    // Link=[<https://api.github.com/search/code?q=import+in%3Afile+extension%3Ajava&per_page=100&page=2>; rel="next", <https://api.github.com/search/code?q=import+in%3Afile+extension%3Ajava&per_page=100&page=10>; rel="last"]
+    // if this is the last one
+    // Link=[<https://api.github.com/search/code?q=import+in%3Afile+extension%3Ajava&per_page=100&page=1>; rel="first", <https://api.github.com/search/code?q=import+in%3Afile+extension%3Ajava&per_page=100&page=9>; rel="prev"]
+
+    static String parseNextUrl(Map headers) {
+       if (!headers.Link || !headers.Link[0]) {
+           return null
+       }
+       String linkContent = headers.Link[0]
+       String firstLinkChunk = linkContent.split(',')[0]
+       if (!firstLinkChunk.contains(/rel="next"/)) {
+           return null
+       }
+       String result = firstLinkChunk.split(';')[0][1..-2]
+       return result
     }
 
 }
