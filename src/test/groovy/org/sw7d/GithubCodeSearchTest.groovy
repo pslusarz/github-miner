@@ -12,14 +12,11 @@ class GithubCodeSearchTest {
 
     @Test
     void testRetrieveViaFile() {
-        GithubCodeSearch search = new GithubCodeSearch(query:'import+in:file+extension:java', loadFromFile: true)
-        search.results.items.each {
-            println it.repository.full_name+": "+it.name
-            it.text_matches.each {
-                println "   "+it.fragment.replaceAll(/\s/, "~")
-            }
-        }
-        assert search.results.total_count > 900
+        GithubCodeSearch searchViaUrl = new GithubCodeSearch(query:'while+in:file+extension:java', loadFromFile: false)
+        assert searchViaUrl.results.total_count > 0, "precondition"
+        GithubCodeSearch searchFromFile = new GithubCodeSearch(query:'while+in:file+extension:java', loadFromFile: true)
+
+        assert searchFromFile.results == searchViaUrl.results
     }
 
     @Test
