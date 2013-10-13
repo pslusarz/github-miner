@@ -3,7 +3,7 @@ package org.sw7d
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 
-class GithubCodeSearch {
+class GithubSearchRetriever {
     String query
     int perPage=100
     boolean getAll = false
