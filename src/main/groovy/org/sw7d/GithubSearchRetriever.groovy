@@ -4,6 +4,7 @@ import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 
 class GithubSearchRetriever {
+    String type = 'code'
     String query
     int perPage=100
     boolean getAll = false
@@ -14,7 +15,7 @@ class GithubSearchRetriever {
     Map getResults() {
        load()
        if (!_result) {
-           _result = getOnePage("https://api.github.com/search/code?q=${query}&per_page=${perPage}")
+           _result = getOnePage("https://api.github.com/search/${type}?q=${query}&per_page=${perPage}")
            while (getAll && _nextUrl) {
              _result.items.addAll (getOnePage(_nextUrl).items)
            }
